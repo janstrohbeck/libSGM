@@ -10,8 +10,6 @@ if(DEFINED AUTO_DETECT_ARCH AND "${AUTO_DETECT_ARCH}")
 endif()
 message(STATUS "CUDA_ARCH: \"${CUDA_ARCH}\"")
 
-include_directories(../include)
-
 if (CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_CXX_FLAGS "-O3 -Wall")
 	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 --disable-warnings")
@@ -20,16 +18,23 @@ endif()
 SET(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDA_ARCH}")
 
 file(GLOB STEREOSRCS "*.cu" "*.cpp")
+set(CUDA_LINK_LIBRARIES_KEYWORD PUBLIC)
 
 if(LIBSGM_SHARED)
 	CUDA_ADD_LIBRARY(sgm stereo_sgm.cpp ${STEREOSRCS} SHARED)
-	target_link_libraries(sgm ${CUDA_LIBRARIES})
+	target_link_libraries(sgm PUBLIC ${CUDA_LIBRARIES})
 	if(BUILD_OPENCV_WRAPPER)
-		target_link_libraries(sgm ${OpenCV_LIBS})
+		target_link_libraries(sgm PUBLIC ${OpenCV_LIBS})
 	endif()
 else()
 	CUDA_ADD_LIBRARY(sgm stereo_sgm.cpp ${STEREOSRCS} STATIC)
 endif()
+
+set(INCLUDE_INSTALL_DIR include/ CACHE STRING "Path to installed include directory")
+target_include_directories(sgm PUBLIC
+	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:${INCLUDE_INSTALL_DIR}>
+)
 
 install(
 	TARGETS sgm
